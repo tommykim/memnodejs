@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>사용자 목록</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .user-list {
+      list-style: none;
+      padding: 0;
+    }
+    .user-item {
+      border: 1px solid #ddd;
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 5px;
+    }
+    .user-email {
+      color: #666;
+      font-size: 0.9em;
+    }
+    .user-date {
+      color: #999;
+      font-size: 0.8em;
+    }
+    .registration-form {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    
+    .submit-button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    .submit-button:hover {
+      background-color: #45a049;
+    }
+    
+    .error-message {
+      color: red;
+      margin-top: 5px;
+    }
+    
+    .success-message {
+      color: green;
+      margin-top: 5px;
+    }
+    
+    .edit-mode input {
+      margin-bottom: 10px;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .edit-button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+    
+    .cancel-button {
+      background-color: #f44336;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+    
+    .save-button {
+      background-color: #2196F3;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+    
+    .delete-button {
+      background-color: #f44336;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+    
+    .delete-button:hover {
+      background-color: #d32f2f;
+    }
+  </style>
+</head>
+<body>
+  <h1>사용자 관리</h1>
+  
+  <!-- 사용자 등록 폼 -->
+  <div class="registration-form">
+    <h2>새 사용자 등록</h2>
+    <form id="userForm" onsubmit="return registerUser(event)">
+      <div class="form-group">
+        <label for="name">이름:</label>
+        <input type="text" id="name" name="name" required>
+      </div>
+      <div class="form-group">
+        <label for="email">이메일:</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+      <button type="submit" class="submit-button">등록</button>
+      <div id="formMessage"></div>
+    </form>
+  </div>
+
+  <!-- 기존 사용자 목록 -->
+  <h2>사용자 목록</h2>
+  <div id="userList"></div>
+
+  <script>
+    // 사용자 등록 함수
+    async function registerUser(event) {
+      event.preventDefault();
+      const formMessage = document.getElementById('formMessage');
+      
+      try {
+        const formData = {
+          name: document.getElementById('name').value,
+          email: document.getElementById('email').value
+        };
+
+        const response = await fetch('/api/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          formMessage.className = 'success-message';
+          formMessage.textContent = data.message;
+          document.getElementById('userForm').reset();
+          // 사용자 목록 새로고침
+          loadUsers();
+        } else {
+          throw new Error(data.error);
+        }
+      } catch (err) {
+        formMessage.className = 'error-message';
+        formMessage.textContent = err.message;
+      }
+      
+      return false;
+    }
+
+    async function loadUsers() {
+      try {
+        const response = await fetch('/api/users');
+        const data = await response.json();
+        
+        if (data.success) {
+          const userList = document.getElementById('userList');
+          userList.innerHTML = `
+            <ul class="user-list">
+              ${data.data.map(user => `
+                <li class="user-item" id="user-${user.id}">
+                  <div class="view-mode">
+                    <h3>${user.name}</h3>
+                    <div class="user-email">${user.email}</div>
+                    <div class="user-date">가입일: ${new Date(user.created_at).toLocaleString()}</div>
+                    <div class="button-group">
+                      <button class="edit-button" onclick="startEdit(${user.id}, '${user.name}', '${user.email}')">
+                        수정
+                      </button>
+                      <button class="delete-button" onclick="deleteUser(${user.id})">
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                  <div class="edit-mode" style="display: none;">
+                    <input type="text" id="edit-name-${user.id}" value="${user.name}" class="form-control">
+                    <input type="email" id="edit-email-${user.id}" value="${user.email}" class="form-control">
+                    <div class="button-group">
+                      <button class="save-button" onclick="saveEdit(${user.id})">저장</button>
+                      <button class="cancel-button" onclick="cancelEdit(${user.id})">취소</button>
+                    </div>
+                  </div>
+                </li>
+              `).join('')}
+            </ul>
+          `;
+        } else {
+          throw new Error(data.error);
+        }
+      } catch (err) {
+        console.error('사용자 목록 로딩 실패:', err);
+        document.getElementById('userList').innerHTML = `
+          <p style="color: red">사용자 목록을 불러오는데 실패했습니다: ${err.message}</p>
+        `;
+      }
+    }
+
+    function startEdit(userId, name, email) {
+      const userItem = document.getElementById(`user-${userId}`);
+      userItem.querySelector('.view-mode').style.display = 'none';
+      userItem.querySelector('.edit-mode').style.display = 'block';
+    }
+
+    function cancelEdit(userId) {
+      const userItem = document.getElementById(`user-${userId}`);
+      userItem.querySelector('.view-mode').style.display = 'block';
+      userItem.querySelector('.edit-mode').style.display = 'none';
+    }
+
+    async function saveEdit(userId) {
+      try {
+        const name = document.getElementById(`edit-name-${userId}`).value;
+        const email = document.getElementById(`edit-email-${userId}`).value;
+
+        const response = await fetch(`/api/users/${userId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ name, email })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // 성공 메시지 표시
+          alert('사용자 정보가 성공적으로 수정되었습니다.');
+          // 사용자 목록 새로고침
+          loadUsers();
+        } else {
+          throw new Error(data.error);
+        }
+      } catch (err) {
+        alert(`수정 실패: ${err.message}`);
+      }
+    }
+
+    async function deleteUser(userId) {
+      if (!confirm('정말로 이 사용자를 삭제하시겠습니까?')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/users/${userId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert('사용자가 성공적으로 삭제되었습니다.');
+          loadUsers(); // 목록 새로고침
+        } else {
+          throw new Error(data.error);
+        }
+      } catch (err) {
+        alert(`삭제 실패: ${err.message}`);
+      }
+    }
+
+    // 페이지 로드 시 사용자 목록 불러오기
+    window.addEventListener('load', loadUsers);
+  </script>
+</body>
+</html> 
