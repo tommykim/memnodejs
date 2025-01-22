@@ -3,32 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>사용자 목록</title>
+  <title>사용자 관리</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      max-width: 800px;
+      max-width: 1200px;
       margin: 0 auto;
       padding: 20px;
     }
-    .user-list {
-      list-style: none;
-      padding: 0;
-    }
-    .user-item {
-      border: 1px solid #ddd;
-      margin: 10px 0;
-      padding: 15px;
-      border-radius: 5px;
-    }
-    .user-email {
-      color: #666;
-      font-size: 0.9em;
-    }
-    .user-date {
-      color: #999;
-      font-size: 0.8em;
-    }
+    
     .registration-form {
       background: #f5f5f5;
       padding: 20px;
@@ -53,80 +36,106 @@
       box-sizing: border-box;
     }
     
-    .submit-button {
-      background-color: #4CAF50;
-      color: white;
-      padding: 10px 15px;
+    .button {
+      padding: 5px 10px;
       border: none;
       border-radius: 4px;
       cursor: pointer;
+      color: white;
+      font-size: 0.9em;
     }
     
-    .submit-button:hover {
-      background-color: #45a049;
-    }
-    
-    .error-message {
-      color: red;
-      margin-top: 5px;
-    }
-    
-    .success-message {
-      color: green;
-      margin-top: 5px;
-    }
-    
-    .edit-mode input {
-      margin-bottom: 10px;
-    }
-    
-    .button-group {
-      display: flex;
-      gap: 10px;
+    .submit-button {
+      background-color: #4CAF50;
     }
     
     .edit-button {
-      background-color: #4CAF50;
-      color: white;
-      padding: 5px 10px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.9em;
-    }
-    
-    .cancel-button {
-      background-color: #f44336;
-      color: white;
-      padding: 5px 10px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.9em;
-    }
-    
-    .save-button {
       background-color: #2196F3;
-      color: white;
-      padding: 5px 10px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.9em;
     }
     
     .delete-button {
       background-color: #f44336;
-      color: white;
-      padding: 5px 10px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.9em;
     }
     
-    .delete-button:hover {
-      background-color: #d32f2f;
+    .save-button {
+      background-color: #4CAF50;
+    }
+    
+    .cancel-button {
+      background-color: #f44336;
+    }
+    
+    /* 테이블 스타일 */
+    .user-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    
+    .user-table th,
+    .user-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    .user-table th {
+      background-color: #f5f5f5;
+      font-weight: bold;
+    }
+    
+    .user-table tr:hover {
+      background-color: #f9f9f9;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 5px;
+    }
+    
+    .edit-mode {
+      display: none;
+    }
+    
+    .edit-mode input {
+      width: 100%;
+      padding: 5px;
+      margin-bottom: 5px;
+    }
+    
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+      margin-top: 20px;
+    }
+    
+    .pagination button {
+      padding: 5px 10px;
+      border: 1px solid #ddd;
+      background-color: white;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    
+    .pagination button:hover {
+      background-color: #f5f5f5;
+    }
+    
+    .pagination button.active {
+      background-color: #4CAF50;
+      color: white;
+      border-color: #4CAF50;
+    }
+    
+    .pagination button:disabled {
+      background-color: #ddd;
+      cursor: not-allowed;
+    }
+    
+    .pagination span {
+      padding: 5px 10px;
+      color: #666;
     }
   </style>
 </head>
@@ -145,17 +154,33 @@
         <label for="email">이메일:</label>
         <input type="email" id="email" name="email" required>
       </div>
-      <button type="submit" class="submit-button">등록</button>
+      <button type="submit" class="button submit-button">등록</button>
       <div id="formMessage"></div>
     </form>
   </div>
 
-  <!-- 기존 사용자 목록 -->
+  <!-- 사용자 목록 테이블 -->
   <h2>사용자 목록</h2>
-  <div id="userList"></div>
+  <div id="userList">
+    <table class="user-table">
+      <thead>
+        <tr>
+          <th>이름</th>
+          <th>이메일</th>
+          <th>가입일</th>
+          <th>작업</th>
+        </tr>
+      </thead>
+      <tbody id="userTableBody">
+      </tbody>
+    </table>
+    <div class="pagination" id="pagination"></div>
+  </div>
 
   <script>
-    // 사용자 등록 함수
+    let currentPage = 1;
+    const limit = 5;
+
     async function registerUser(event) {
       event.preventDefault();
       const formMessage = document.getElementById('formMessage');
@@ -180,8 +205,7 @@
           formMessage.className = 'success-message';
           formMessage.textContent = data.message;
           document.getElementById('userForm').reset();
-          // 사용자 목록 새로고침
-          loadUsers();
+          loadUsers(1);
         } else {
           throw new Error(data.error);
         }
@@ -193,42 +217,95 @@
       return false;
     }
 
-    async function loadUsers() {
+    async function loadUsers(page = 1) {
       try {
-        const response = await fetch('/api/users');
+        const response = await fetch(`/api/users?page=${page}&limit=${limit}`);
         const data = await response.json();
         
         if (data.success) {
-          const userList = document.getElementById('userList');
-          userList.innerHTML = `
-            <ul class="user-list">
-              ${data.data.map(user => `
-                <li class="user-item" id="user-${user.id}">
-                  <div class="view-mode">
-                    <h3>${user.name}</h3>
-                    <div class="user-email">${user.email}</div>
-                    <div class="user-date">가입일: ${new Date(user.created_at).toLocaleString()}</div>
-                    <div class="button-group">
-                      <button class="edit-button" onclick="startEdit(${user.id}, '${user.name}', '${user.email}')">
-                        수정
-                      </button>
-                      <button class="delete-button" onclick="deleteUser(${user.id})">
-                        삭제
-                      </button>
-                    </div>
-                  </div>
-                  <div class="edit-mode" style="display: none;">
-                    <input type="text" id="edit-name-${user.id}" value="${user.name}" class="form-control">
-                    <input type="email" id="edit-email-${user.id}" value="${user.email}" class="form-control">
-                    <div class="button-group">
-                      <button class="save-button" onclick="saveEdit(${user.id})">저장</button>
-                      <button class="cancel-button" onclick="cancelEdit(${user.id})">취소</button>
-                    </div>
-                  </div>
-                </li>
-              `).join('')}
-            </ul>
+          const userTableBody = document.getElementById('userTableBody');
+          userTableBody.innerHTML = data.data.map(user => `
+            <tr id="user-${user.id}">
+              <td>
+                <div class="view-mode">${user.name}</div>
+                <div class="edit-mode">
+                  <input type="text" id="edit-name-${user.id}" value="${user.name}">
+                </div>
+              </td>
+              <td>
+                <div class="view-mode">${user.email}</div>
+                <div class="edit-mode">
+                  <input type="email" id="edit-email-${user.id}" value="${user.email}">
+                </div>
+              </td>
+              <td>${new Date(user.created_at).toLocaleString()}</td>
+              <td>
+                <div class="view-mode button-group">
+                  <button class="button edit-button" onclick="startEdit(${user.id})">수정</button>
+                  <button class="button delete-button" onclick="deleteUser(${user.id})">삭제</button>
+                </div>
+                <div class="edit-mode button-group">
+                  <button class="button save-button" onclick="saveEdit(${user.id})">저장</button>
+                  <button class="button cancel-button" onclick="cancelEdit(${user.id})">취소</button>
+                </div>
+              </td>
+            </tr>
+          `).join('');
+
+          const pagination = document.getElementById('pagination');
+          const { totalPages } = data.pagination;
+          
+          let paginationHtml = '';
+          
+          // 이전 페이지 버튼
+          paginationHtml += `
+            <button 
+              onclick="loadUsers(${page - 1})" 
+              ${page === 1 ? 'disabled' : ''}
+            >이전</button>
           `;
+
+          // 페이지 번호 버튼 (최대 5개만 표시)
+          const startPage = Math.max(1, page - 2);
+          const endPage = Math.min(totalPages, startPage + 4);
+          
+          // 첫 페이지 버튼
+          if (startPage > 1) {
+            paginationHtml += `
+              <button onclick="loadUsers(1)">1</button>
+              ${startPage > 2 ? '<span>...</span>' : ''}
+            `;
+          }
+
+          // 페이지 번호 버튼
+          for (let i = startPage; i <= endPage; i++) {
+            paginationHtml += `
+              <button 
+                onclick="loadUsers(${i})"
+                class="${i === page ? 'active' : ''}"
+              >${i}</button>
+            `;
+          }
+
+          // 마지막 페이지 버튼
+          if (endPage < totalPages) {
+            paginationHtml += `
+              ${endPage < totalPages - 1 ? '<span>...</span>' : ''}
+              <button onclick="loadUsers(${totalPages})">${totalPages}</button>
+            `;
+          }
+
+          // 다음 페이지 버튼
+          paginationHtml += `
+            <button 
+              onclick="loadUsers(${page + 1})"
+              ${page === totalPages ? 'disabled' : ''}
+            >다음</button>
+          `;
+
+          pagination.innerHTML = paginationHtml;
+          
+          currentPage = page;
         } else {
           throw new Error(data.error);
         }
@@ -240,16 +317,16 @@
       }
     }
 
-    function startEdit(userId, name, email) {
-      const userItem = document.getElementById(`user-${userId}`);
-      userItem.querySelector('.view-mode').style.display = 'none';
-      userItem.querySelector('.edit-mode').style.display = 'block';
+    function startEdit(userId) {
+      const userRow = document.getElementById(`user-${userId}`);
+      userRow.querySelectorAll('.view-mode').forEach(el => el.style.display = 'none');
+      userRow.querySelectorAll('.edit-mode').forEach(el => el.style.display = 'block');
     }
 
     function cancelEdit(userId) {
-      const userItem = document.getElementById(`user-${userId}`);
-      userItem.querySelector('.view-mode').style.display = 'block';
-      userItem.querySelector('.edit-mode').style.display = 'none';
+      const userRow = document.getElementById(`user-${userId}`);
+      userRow.querySelectorAll('.view-mode').forEach(el => el.style.display = 'block');
+      userRow.querySelectorAll('.edit-mode').forEach(el => el.style.display = 'none');
     }
 
     async function saveEdit(userId) {
@@ -268,10 +345,8 @@
         const data = await response.json();
 
         if (data.success) {
-          // 성공 메시지 표시
           alert('사용자 정보가 성공적으로 수정되었습니다.');
-          // 사용자 목록 새로고침
-          loadUsers();
+          loadUsers(currentPage);
         } else {
           throw new Error(data.error);
         }
@@ -297,7 +372,7 @@
 
         if (data.success) {
           alert('사용자가 성공적으로 삭제되었습니다.');
-          loadUsers(); // 목록 새로고침
+          loadUsers(currentPage);
         } else {
           throw new Error(data.error);
         }
@@ -306,8 +381,7 @@
       }
     }
 
-    // 페이지 로드 시 사용자 목록 불러오기
-    window.addEventListener('load', loadUsers);
+    window.addEventListener('load', () => loadUsers(1));
   </script>
 </body>
 </html> 

@@ -56,12 +56,34 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
-// 모든 사용자 조회 API
+// 사용자 목록 조회 API
 app.get('/api/users', async (req, res) => {
   try {
-    const [users] = await db.query('SELECT * FROM users');
-    console.log('조회된 사용자:', users);
-    res.json({ success: true, data: users });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const offset = (page - 1) * limit;
+
+    // 전체 사용자 수 조회
+    const [countResult] = await db.query('SELECT COUNT(*) as total FROM users');
+    const totalUsers = countResult[0].total;
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    // 페이지별 사용자 조회
+    const [users] = await db.query(
+      'SELECT * FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?',
+      [limit, offset]
+    );
+
+    res.json({ 
+      success: true, 
+      data: users,
+      pagination: {
+        total: totalUsers,
+        totalPages,
+        currentPage: page,
+        limit
+      }
+    });
   } catch (err) {
     console.error('사용자 조회 오류:', err);
     res.status(500).json({ 
