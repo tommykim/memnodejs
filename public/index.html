@@ -163,6 +163,15 @@
         <label for="email">이메일:</label>
         <input type="email" id="email" name="email" required>
       </div>
+      <div class="form-group">
+        <label for="phone">전화번호:</label>
+        <input type="tel" id="phone" name="phone" pattern="[0-9]{2,3}-[0-9]{3,4}-[0-9]{4}" 
+          placeholder="010-1234-5678" required>
+      </div>
+      <div class="form-group">
+        <label for="birthdate">생년월일:</label>
+        <input type="date" id="birthdate" name="birthdate" required>
+      </div>
       <button type="submit" class="button submit-button">등록</button>
       <div id="formMessage"></div>
     </form>
@@ -176,6 +185,8 @@
         <tr>
           <th>이름</th>
           <th>이메일</th>
+          <th>전화번호</th>
+          <th>생년월일</th>
           <th>가입일</th>
           <th>작업</th>
         </tr>
@@ -197,7 +208,9 @@
       try {
         const formData = {
           name: document.getElementById('name').value,
-          email: document.getElementById('email').value
+          email: document.getElementById('email').value,
+          phone: document.getElementById('phone').value,
+          birthdate: document.getElementById('birthdate').value
         };
 
         const response = await fetch('/api/users', {
@@ -245,6 +258,20 @@
                 <div class="view-mode">${user.email}</div>
                 <div class="edit-mode">
                   <input type="email" id="edit-email-${user.id}" value="${user.email}">
+                </div>
+              </td>
+              <td>
+                <div class="view-mode">${user.phone || ''}</div>
+                <div class="edit-mode">
+                  <input type="tel" id="edit-phone-${user.id}" value="${user.phone || ''}" 
+                    pattern="[0-9]{2,3}-[0-9]{3,4}-[0-9]{4}">
+                </div>
+              </td>
+              <td>
+                <div class="view-mode">${user.birthdate ? new Date(user.birthdate).toLocaleDateString() : ''}</div>
+                <div class="edit-mode">
+                  <input type="date" id="edit-birthdate-${user.id}" 
+                    value="${user.birthdate ? user.birthdate.split('T')[0] : ''}">
                 </div>
               </td>
               <td>${new Date(user.created_at).toLocaleString()}</td>
@@ -342,13 +369,15 @@
       try {
         const name = document.getElementById(`edit-name-${userId}`).value;
         const email = document.getElementById(`edit-email-${userId}`).value;
+        const phone = document.getElementById(`edit-phone-${userId}`).value;
+        const birthdate = document.getElementById(`edit-birthdate-${userId}`).value;
 
         const response = await fetch(`/api/users/${userId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ name, email })
+          body: JSON.stringify({ name, email, phone, birthdate })
         });
 
         const data = await response.json();

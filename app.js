@@ -12,20 +12,20 @@ app.use(express.json());
 // 사용자 등록 API
 app.post('/api/users', async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { name, email, phone, birthdate } = req.body;
     
     // 입력값 검증
-    if (!name || !email) {
+    if (!name || !email || !phone || !birthdate) {
       return res.status(400).json({ 
         success: false, 
-        error: '이름과 이메일은 필수 입력값입니다.' 
+        error: '이름, 이메일, 전화번호, 생년월일은 필수 입력값입니다.' 
       });
     }
 
     // 사용자 등록
     const [result] = await db.query(
-      'INSERT INTO users (name, email) VALUES (?, ?)',
-      [name, email]
+      'INSERT INTO users (name, email, phone, birthdate) VALUES (?, ?, ?, ?)',
+      [name, email, phone, birthdate]
     );
 
     // 등록된 사용자 정보 조회
@@ -98,13 +98,13 @@ app.get('/api/users', async (req, res) => {
 app.put('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email } = req.body;
+    const { name, email, phone, birthdate } = req.body;
     
     // 입력값 검증
-    if (!name || !email) {
+    if (!name || !email || !phone || !birthdate) {
       return res.status(400).json({ 
         success: false, 
-        error: '이름과 이메일은 필수 입력값입니다.' 
+        error: '이름, 이메일, 전화번호, 생년월일은 필수 입력값입니다.' 
       });
     }
 
@@ -123,8 +123,8 @@ app.put('/api/users/:id', async (req, res) => {
 
     // 사용자 정보 업데이트
     await db.query(
-      'UPDATE users SET name = ?, email = ? WHERE id = ?',
-      [name, email, id]
+      'UPDATE users SET name = ?, email = ?, phone = ?, birthdate = ? WHERE id = ?',
+      [name, email, phone, birthdate, id]
     );
 
     // 업데이트된 사용자 정보 조회
